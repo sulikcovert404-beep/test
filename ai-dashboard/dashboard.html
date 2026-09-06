@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>🚀 داشبورد AI</title>
+<title>🚀 داشبورد AI - نسخه 2</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,19 +13,35 @@
   .stat { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; text-align: center; }
   .stat-value { font-size: 2rem; font-weight: 900; color: #3b82f6; }
   .stat-label { color: #94a3b8; font-size: 0.85rem; margin-top: 5px; }
-  .services { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
-  .service { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }
-  .service-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 10px; }
+  .services { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
+  .service { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; position: relative; }
+  .service.active { border-color: #10b981; }
+  .service-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #64748b; }
+  .status-dot.active { background: #10b981; box-shadow: 0 0 8px #10b981; }
+  .status-dot.error { background: #ef4444; }
+  .status-dot.loading { background: #f59e0b; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
   .service-info { color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px; }
-  .key-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid #1e293b; border-radius: 8px; padding: 10px; color: #f1f5f9; margin-bottom: 10px; font-family: monospace; direction: ltr; }
-  .btn { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-family: 'Vazirmatn'; font-weight: 600; }
+  .key-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid #1e293b; border-radius: 8px; padding: 10px; color: #f1f5f9; margin-bottom: 10px; font-family: monospace; direction: ltr; text-align: left; }
+  .key-input:focus { outline: none; border-color: #3b82f6; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-family: 'Vazirmatn'; font-weight: 600; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
   .btn:hover { background: #2563eb; }
-  .test-log { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; margin-top: 30px; font-family: monospace; font-size: 0.85rem; max-height: 300px; overflow-y: auto; direction: ltr; text-align: left; }
+  .btn-success { background: #10b981; }
+  .btn-success:hover { background: #059669; }
+  .btn-outline { background: transparent; border: 1px solid #1e293b; color: #94a3b8; }
+  .btn-outline:hover { border-color: #3b82f6; color: #3b82f6; }
+  .test-log { background: #000; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; margin-top: 30px; font-family: 'Courier New', monospace; font-size: 0.8rem; max-height: 400px; overflow-y: auto; direction: ltr; text-align: left; color: #10b981; }
+  .test-log .error { color: #ef4444; }
+  .test-log .info { color: #f59e0b; }
+  .test-result { background: rgba(16,185,129,0.1); border: 1px solid #10b981; border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 0.85rem; }
+  .test-result.error { background: rgba(239,68,68,0.1); border-color: #ef4444; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>🚀 داشبورد مدیریت هوش مصنوعی</h1>
+  <h1>🚀 داشبورد مدیریت هوش مصنوعی <span style="font-size: 0.6rem; color: #94a3b8; -webkit-text-fill-color: #94a3b8;">v2.0</span></h1>
   
   <div class="stats">
     <div class="stat">
@@ -33,67 +49,269 @@
       <div class="stat-label">کلید ذخیره‌شده</div>
     </div>
     <div class="stat">
+      <div class="stat-value" id="totalActive">0</div>
+      <div class="stat-label">سرویس فعال</div>
+    </div>
+    <div class="stat">
       <div class="stat-value" id="totalValue">$0</div>
       <div class="stat-label">ارزش ماهانه</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="lastTest">-</div>
+      <div class="stat-label">آخرین تست</div>
     </div>
   </div>
 
   <div class="services" id="services"></div>
 
-  <div class="test-log" id="testLog">آماده تست...</div>
+  <div style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
+    <button class="btn" onclick="testAll()">⚡ تست همه سرویس‌ها</button>
+    <button class="btn btn-outline" onclick="clearLog()">🗑️ پاک کردن لاگ</button>
+    <button class="btn btn-outline" onclick="exportKeys()">📥 خروجی کلیدها</button>
+    <button class="btn btn-outline" onclick="importKeys()">📤 ورود کلیدها</button>
+  </div>
+
+  <div class="test-log" id="testLog">🟢 سیستم آماده است...</div>
 </div>
 
 <script>
 const SERVICES = [
-  { id: 'groq', name: 'Groq', info: '1M توکن/روز رایگان', url: 'https://console.groq.com/keys', value: 50 },
-  { id: 'cerebras', name: 'Cerebras', info: '$5 + 1M توکن/روز', url: 'https://cloud.cerebras.ai', value: 40 },
-  { id: 'openrouter', name: 'OpenRouter', info: '۲۰+ مدل رایگان', url: 'https://openrouter.ai/keys', value: 60 },
-  { id: 'deepseek', name: 'DeepSeek', info: 'کاملاً رایگان', url: 'https://platform.deepseek.com', value: 35 },
-  { id: 'together', name: 'Together AI', info: '$150 کردیت', url: 'https://together.ai', value: 150 },
+  { 
+    id: 'groq', name: 'Groq', 
+    info: '1M توکن/روز • سرعت فوق‌العاده • Llama, Qwen', 
+    url: 'https://console.groq.com/keys', 
+    testEndpoint: 'https://api.groq.com/openai/v1/chat/completions',
+    testModel: 'llama-3.3-70b-versatile',
+    value: 50 
+  },
+  { 
+    id: 'cerebras', name: 'Cerebras', 
+    info: '$5 هدیه + 1M توکن/روز • سریع‌ترین اینفرنس', 
+    url: 'https://cloud.cerebras.ai', 
+    testEndpoint: 'https://api.cerebras.ai/v1/chat/completions',
+    testModel: 'qwen-3-coder-480b',
+    value: 40 
+  },
+  { 
+    id: 'deepseek', name: 'DeepSeek', 
+    info: 'کاملاً رایگان • استدلال قوی', 
+    url: 'https://platform.deepseek.com/api_keys', 
+    testEndpoint: 'https://api.deepseek.com/v1/chat/completions',
+    testModel: 'deepseek-chat',
+    value: 35 
+  },
+  { 
+    id: 'openrouter', name: 'OpenRouter', 
+    info: '۲۰+ مدل رایگان • BYOK 1M درخواست', 
+    url: 'https://openrouter.ai/keys', 
+    testEndpoint: 'https://openrouter.ai/api/v1/chat/completions',
+    testModel: 'deepseek/deepseek-chat:free',
+    value: 60 
+  },
+  { 
+    id: 'together', name: 'Together AI', 
+    info: '$150 کردیت • DeepSeek, Kimi, تصویر', 
+    url: 'https://api.together.xyz/settings/api-keys', 
+    testEndpoint: 'https://api.together.xyz/v1/chat/completions',
+    testModel: 'deepseek-ai/DeepSeek-V3',
+    value: 150 
+  },
 ];
 
 let keys = JSON.parse(localStorage.getItem('ai-keys') || '{}');
+let status = JSON.parse(localStorage.getItem('ai-status') || '{}');
+
+function log(msg, type = 'info') {
+  const logEl = document.getElementById('testLog');
+  const time = new Date().toLocaleTimeString('fa-IR');
+  const className = type === 'error' ? 'error' : type === 'success' ? '' : 'info';
+  const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : '🔵';
+  logEl.innerHTML += `<div class="${className}">[${time}] ${icon} ${msg}</div>`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('testLog').innerHTML = '';
+  log('لاگ پاک شد');
+}
 
 function render() {
   const services = document.getElementById('services');
-  services.innerHTML = SERVICES.map(s => `
-    <div class="service">
-      <div class="service-name">${s.name}</div>
-      <div class="service-info">${s.info}</div>
-      <input type="password" class="key-input" id="key-${s.id}" 
-             placeholder="API Key" value="${keys[s.id] || ''}" 
-             onchange="saveKey('${s.id}', this.value)">
-      <a href="${s.url}" target="_blank" class="btn">🔗 داشبورد</a>
-    </div>
-  `).join('');
+  services.innerHTML = SERVICES.map(s => {
+    const hasKey = keys[s.id] && keys[s.id].length > 5;
+    const serviceStatus = status[s.id];
+    const statusClass = serviceStatus === 'active' ? 'active' : 
+                        serviceStatus === 'error' ? 'error' : 
+                        serviceStatus === 'loading' ? 'loading' : '';
+    const cardClass = serviceStatus === 'active' ? 'active' : '';
+    
+    return `
+      <div class="service ${cardClass}" id="card-${s.id}">
+        <div class="service-name">
+          <span class="status-dot ${statusClass}"></span>
+          ${s.name}
+        </div>
+        <div class="service-info">${s.info}</div>
+        <input type="password" class="key-input" id="key-${s.id}" 
+               placeholder="API Key خود را وارد کنید..." 
+               value="${keys[s.id] || ''}" 
+               onchange="saveKey('${s.id}', this.value)">
+        <div id="result-${s.id}"></div>
+        <div class="btn-row">
+          <button class="btn btn-success" onclick="testService('${s.id}')">🧪 تست زنده</button>
+          <a href="${s.url}" target="_blank" class="btn">🔗 دریافت کلید</a>
+          <button class="btn btn-outline" onclick="toggleKey('${s.id}')">👁️</button>
+        </div>
+      </div>
+    `;
+  }).join('');
   
   updateStats();
+}
+
+function toggleKey(id) {
+  const input = document.getElementById(`key-${id}`);
+  input.type = input.type === 'password' ? 'text' : 'password';
 }
 
 function saveKey(id, value) {
   keys[id] = value.trim();
   localStorage.setItem('ai-keys', JSON.stringify(keys));
+  status[id] = null;
+  localStorage.setItem('ai-status', JSON.stringify(status));
   updateStats();
+  log(`🔑 کلید ${SERVICES.find(s=>s.id===id).name} ذخیره شد`);
 }
 
 function updateStats() {
   const keyCount = Object.values(keys).filter(k => k && k.length > 5).length;
+  const activeCount = Object.values(status).filter(s => s === 'active').length;
   const totalValue = SERVICES.filter(s => keys[s.id]?.length > 5)
                              .reduce((sum, s) => sum + s.value, 0);
   
   document.getElementById('totalKeys').textContent = keyCount;
+  document.getElementById('totalActive').textContent = activeCount;
   document.getElementById('totalValue').textContent = '$' + totalValue;
+  document.getElementById('lastTest').textContent = new Date().toLocaleTimeString('fa-IR');
 }
 
-function log(msg) {
-  const logEl = document.getElementById('testLog');
-  const time = new Date().toLocaleTimeString('fa-IR');
-  logEl.textContent += `\n[${time}] ${msg}`;
-  logEl.scrollTop = logEl.scrollHeight;
+async function testService(id) {
+  const service = SERVICES.find(s => s.id === id);
+  const key = keys[id];
+  
+  if (!key || key.length < 5) {
+    log(`${service.name}: ❌ ابتدا API Key را وارد کنید`, 'error');
+    showResult(id, '❌ ابتدا API Key را وارد کنید', true);
+    return;
+  }
+  
+  status[id] = 'loading';
+  localStorage.setItem('ai-status', JSON.stringify(status));
+  render();
+  
+  log(`🔄 تست ${service.name} شروع شد...`);
+  const startTime = Date.now();
+  
+  try {
+    const response = await fetch(service.testEndpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: service.testModel,
+        messages: [{ role: 'user', content: 'پاسخ کوتاه: سلام در ۳ کلمه' }],
+        max_tokens: 50,
+      })
+    });
+    
+    const latency = Date.now() - startTime;
+    
+    if (response.ok) {
+      const data = await response.json();
+      const reply = data.choices?.[0]?.message?.content || 'پاسخ دریافت شد';
+      status[id] = 'active';
+      log(`${service.name}: ✅ موفق! (${latency}ms) → "${reply.substring(0, 60)}"`, 'success');
+      showResult(id, `✅ اتصال موفق • ${latency}ms • "${reply.substring(0, 50)}"`, false);
+    } else {
+      const errorText = await response.text();
+      status[id] = 'error';
+      log(`${service.name}: ❌ خطا ${response.status} - ${errorText.substring(0, 100)}`, 'error');
+      showResult(id, `❌ خطا ${response.status}: ${errorText.substring(0, 80)}`, true);
+    }
+  } catch (error) {
+    status[id] = 'error';
+    log(`${service.name}: ❌ خطای شبکه - ${error.message}`, 'error');
+    showResult(id, `❌ خطای شبکه: ${error.message}`, true);
+  }
+  
+  localStorage.setItem('ai-status', JSON.stringify(status));
+  render();
+}
+
+function showResult(id, message, isError) {
+  const resultEl = document.getElementById(`result-${id}`);
+  resultEl.innerHTML = `<div class="test-result ${isError ? 'error' : ''}">${message}</div>`;
+}
+
+async function testAll() {
+  log('═══════════════════════════════════════');
+  log('🚀 شروع تست همه سرویس‌ها');
+  log('═══════════════════════════════════════');
+  
+  for (const service of SERVICES) {
+    if (keys[service.id] && keys[service.id].length > 5) {
+      await testService(service.id);
+      await new Promise(r => setTimeout(r, 500));
+    } else {
+      log(`${service.name}: ⏸️ کلید وارد نشده - رد شد`, 'info');
+    }
+  }
+  
+  log('═══════════════════════════════════════');
+  log('🏁 تست کامل شد', 'success');
+}
+
+function exportKeys() {
+  const data = { version: '2.0', keys, status, exported: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ai-keys-${Date.now()}.json`;
+  a.click();
+  log('📥 کلیدها دانلود شدند', 'success');
+}
+
+function importKeys() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        keys = data.keys || keys;
+        status = data.status || status;
+        localStorage.setItem('ai-keys', JSON.stringify(keys));
+        localStorage.setItem('ai-status', JSON.stringify(status));
+        render();
+        log('📤 کلیدها وارد شدند', 'success');
+      } catch (err) {
+        log('❌ فایل نامعتبر است', 'error');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 
 render();
-log('داشبورد آماده است');
+log('🟢 داشبورد v2.0 آماده است', 'success');
+log('💡 راهنما: ابتدا روی "🔗 دریافت کلید" کلیک کنید، سپس کلید را در فیلد مربوطه وارد کنید', 'info');
 </script>
 </body>
 </html>
