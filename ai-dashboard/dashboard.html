@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>🚀 داشبورد AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Vazirmatn', sans-serif; background: #0a0e1a; color: #f1f5f9; padding: 20px; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 2rem; margin-bottom: 30px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+  .stat { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; text-align: center; }
+  .stat-value { font-size: 2rem; font-weight: 900; color: #3b82f6; }
+  .stat-label { color: #94a3b8; font-size: 0.85rem; margin-top: 5px; }
+  .services { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+  .service { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; }
+  .service-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 10px; }
+  .service-info { color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px; }
+  .key-input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid #1e293b; border-radius: 8px; padding: 10px; color: #f1f5f9; margin-bottom: 10px; font-family: monospace; direction: ltr; }
+  .btn { background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-family: 'Vazirmatn'; font-weight: 600; }
+  .btn:hover { background: #2563eb; }
+  .test-log { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; margin-top: 30px; font-family: monospace; font-size: 0.85rem; max-height: 300px; overflow-y: auto; direction: ltr; text-align: left; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🚀 داشبورد مدیریت هوش مصنوعی</h1>
+  
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value" id="totalKeys">0</div>
+      <div class="stat-label">کلید ذخیره‌شده</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="totalValue">$0</div>
+      <div class="stat-label">ارزش ماهانه</div>
+    </div>
+  </div>
+
+  <div class="services" id="services"></div>
+
+  <div class="test-log" id="testLog">آماده تست...</div>
+</div>
+
+<script>
+const SERVICES = [
+  { id: 'groq', name: 'Groq', info: '1M توکن/روز رایگان', url: 'https://console.groq.com/keys', value: 50 },
+  { id: 'cerebras', name: 'Cerebras', info: '$5 + 1M توکن/روز', url: 'https://cloud.cerebras.ai', value: 40 },
+  { id: 'openrouter', name: 'OpenRouter', info: '۲۰+ مدل رایگان', url: 'https://openrouter.ai/keys', value: 60 },
+  { id: 'deepseek', name: 'DeepSeek', info: 'کاملاً رایگان', url: 'https://platform.deepseek.com', value: 35 },
+  { id: 'together', name: 'Together AI', info: '$150 کردیت', url: 'https://together.ai', value: 150 },
+];
+
+let keys = JSON.parse(localStorage.getItem('ai-keys') || '{}');
+
+function render() {
+  const services = document.getElementById('services');
+  services.innerHTML = SERVICES.map(s => `
+    <div class="service">
+      <div class="service-name">${s.name}</div>
+      <div class="service-info">${s.info}</div>
+      <input type="password" class="key-input" id="key-${s.id}" 
+             placeholder="API Key" value="${keys[s.id] || ''}" 
+             onchange="saveKey('${s.id}', this.value)">
+      <a href="${s.url}" target="_blank" class="btn">🔗 داشبورد</a>
+    </div>
+  `).join('');
+  
+  updateStats();
+}
+
+function saveKey(id, value) {
+  keys[id] = value.trim();
+  localStorage.setItem('ai-keys', JSON.stringify(keys));
+  updateStats();
+}
+
+function updateStats() {
+  const keyCount = Object.values(keys).filter(k => k && k.length > 5).length;
+  const totalValue = SERVICES.filter(s => keys[s.id]?.length > 5)
+                             .reduce((sum, s) => sum + s.value, 0);
+  
+  document.getElementById('totalKeys').textContent = keyCount;
+  document.getElementById('totalValue').textContent = '$' + totalValue;
+}
+
+function log(msg) {
+  const logEl = document.getElementById('testLog');
+  const time = new Date().toLocaleTimeString('fa-IR');
+  logEl.textContent += `\n[${time}] ${msg}`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+render();
+log('داشبورد آماده است');
+</script>
+</body>
+</html>
